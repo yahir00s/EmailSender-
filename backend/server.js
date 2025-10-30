@@ -5,6 +5,7 @@ const { google } = require("googleapis");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const morgan = require("morgan");
 require("dotenv").config();
 
 const app = express();
@@ -13,6 +14,39 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Logger middleware
+app.use(morgan('[:date[iso]] :method :url :status :response-time ms - :res[content-length]'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  
+  // Si el error es de validación (400)
+  if (err instanceof SyntaxError || err.status === 400) {
+    return res.status(400).json({
+      success: false,
+      error: 'Bad Request',
+      details: err.message
+    });
+  }
+
+  // Si es un error de multer
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      error: 'Error en la subida de archivo',
+      details: err.message
+    });
+  }
+
+  // Error por defecto (500)
+  res.status(500).json({
+    success: false,
+    error: 'Error interno del servidor',
+    details: process.env.NODE_ENV === 'development' ? err.message : 'Algo salió mal'
+  });
+});
 
 // Configuración de Gmail API
 const OAuth2 = google.auth.OAuth2;

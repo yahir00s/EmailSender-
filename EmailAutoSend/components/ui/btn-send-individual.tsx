@@ -4,23 +4,70 @@ import { Colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AnimatedAlert from "./animatedAlert";
 import { useAlert } from "@/context/AlertContext";
+import { BACKEND } from "@/app/config";
 
-const ButtonSendIndividual = () => {
-  const { showAlert } = useAlert();
-
-
-  const handleSendMessaje = () => {
-    try {
-      showAlert("Mensaje enviado correctamente ", "success")
-    } catch (error) {}
+interface ButtonSendIndividualProps {
+  data: {
+    name: string;
+    email: string;
+    timestamp: string;
   };
+  onSuccess?: () => void;
+}
+
+const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
+  data,
+  onSuccess,
+}) => {
+  const { showAlert } = useAlert();
+  const [sending, setSending] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (sending) return;
+
+    setSending(true);
+    try {
+      // Enviar como JSON directamente
+      const response = await fetch(`${BACKEND}/api/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showAlert("Datos enviados correctamente", "success");
+        onSuccess?.();
+      } else {
+        throw new Error(result.error || "Error al enviar datos");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      showAlert(
+        error instanceof Error ? error.message : "Error al enviar datos",
+        "error"
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <View>
-      <Pressable style={styles.container} onPress={handleSendMessaje}>
-        <Ionicons name="send" size={24} color="black" />
+      <Pressable
+        style={[styles.container, sending && styles.sending]}
+        onPress={handleSendMessage}
+        disabled={sending}
+      >
+        <Ionicons
+          name={sending ? "hourglass" : "send"}
+          size={24}
+          color={sending ? Colors.light.tint : "black"}
+        />
       </Pressable>
-
-
     </View>
   );
 };
@@ -31,5 +78,11 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
+    padding: 8,
+    borderRadius: 8,
+  },
+  sending: {
+    opacity: 0.7,
+    backgroundColor: Colors.light.background,
   },
 });
