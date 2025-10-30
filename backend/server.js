@@ -133,7 +133,11 @@ app.get("/health", (req, res) => {
 // Endpoint para enviar correo individual
 app.post("/api/send-email", async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const body = req.body; // Ej: { "yahir": "yairjesus49@gmail.com" }
+
+    // Extraer nombre y email del primer par key/value
+    const name = Object.keys(body)[0];   // "yahir"
+    const email = body[name];    
 
     if (!email || !name) {
       return res.status(400).json({
@@ -353,7 +357,7 @@ app.post("/api/send-bulk-emails", async (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   console.log(
     `📧 Configuración de email: ${process.env.EMAIL_USER || "No configurado"}`

@@ -7,11 +7,7 @@ import { useAlert } from "@/context/AlertContext";
 import { BACKEND } from "@/app/config";
 
 interface ButtonSendIndividualProps {
-  data: {
-    name: string;
-    email: string;
-    timestamp: string;
-  };
+  data: any;
   onSuccess?: () => void;
 }
 
@@ -35,6 +31,7 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
         },
         body: JSON.stringify(data),
       });
+      console.log(data)
 
       const result = await response.json();
 
