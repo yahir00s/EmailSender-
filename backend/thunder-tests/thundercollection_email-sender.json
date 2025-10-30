@@ -1,0 +1,64 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Email Sender API",
+  "dateExported": "2025-10-30T12:00:00.000Z",
+  "version": "1.1",
+  "folders": [],
+  "requests": [
+    {
+      "name": "Health Check",
+      "_id": "health-check",
+      "method": "GET",
+      "url": "http://localhost:3000/health",
+      "contentType": "application/json"
+    },
+    {
+      "name": "Send Single Email",
+      "_id": "send-single",
+      "method": "POST",
+      "url": "http://localhost:3000/api/send-email",
+      "contentType": "application/json",
+      "body": {
+        "name": "Prueba Thunder",
+        "email": "tu-email@gmail.com"
+      }
+    },
+    {
+      "name": "Send Bulk Emails",
+      "_id": "send-bulk",
+      "method": "POST",
+      "url": "http://localhost:3000/api/send-bulk-emails",
+      "contentType": "application/json",
+      "body": {
+        "users": [
+          {
+            "name": "Usuario 1",
+            "email": "email1@ejemplo.com"
+          },
+          {
+            "name": "Usuario 2",
+            "email": "email2@ejemplo.com"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Upload JSON",
+      "_id": "upload-json",
+      "method": "POST",
+      "url": "http://localhost:3000/api/upload-json",
+      "contentType": "application/json",
+      "body": {
+        "test": "data",
+        "timestamp": "2025-10-30"
+      }
+    },
+    {
+      "name": "Get Data (Paginated)",
+      "_id": "get-data",
+      "method": "GET",
+      "url": "http://localhost:3000/api/data?page=1&limit=20",
+      "contentType": "application/json"
+    }
+  ]
+}
