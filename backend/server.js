@@ -16,18 +16,22 @@ app.use(cors());
 app.use(express.json());
 
 // Logger middleware
-app.use(morgan('[:date[iso]] :method :url :status :response-time ms - :res[content-length]'));
+app.use(
+  morgan(
+    "[:date[iso]] :method :url :status :response-time ms - :res[content-length]"
+  )
+);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  
+  console.error("Error:", err);
+
   // Si el error es de validación (400)
   if (err instanceof SyntaxError || err.status === 400) {
     return res.status(400).json({
       success: false,
-      error: 'Bad Request',
-      details: err.message
+      error: "Bad Request",
+      details: err.message,
     });
   }
 
@@ -35,16 +39,17 @@ app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     return res.status(400).json({
       success: false,
-      error: 'Error en la subida de archivo',
-      details: err.message
+      error: "Error en la subida de archivo",
+      details: err.message,
     });
   }
 
   // Error por defecto (500)
   res.status(500).json({
     success: false,
-    error: 'Error interno del servidor',
-    details: process.env.NODE_ENV === 'development' ? err.message : 'Algo salió mal'
+    error: "Error interno del servidor",
+    details:
+      process.env.NODE_ENV === "development" ? err.message : "Algo salió mal",
   });
 });
 
@@ -136,8 +141,8 @@ app.post("/api/send-email", async (req, res) => {
     const body = req.body; // Ej: { "yahir": "yairjesus49@gmail.com" }
 
     // Extraer nombre y email del primer par key/value
-    const name = Object.keys(body)[0];   // "yahir"
-    const email = body[name];    
+    const name = Object.keys(body)[0]; // "yahir"
+    const email = body[name];
 
     if (!email || !name) {
       return res.status(400).json({
@@ -229,13 +234,28 @@ app.post("/api/upload-json", upload.single("file"), async (req, res) => {
     return res.json({ success: true, entry });
   } catch (error) {
     console.error("Error saving uploaded JSON:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: "Error al guardar JSON",
-        details: error.message,
-      });
+    return res.status(500).json({
+      success: false,
+      error: "Error al guardar JSON",
+      details: error.message,
+    });
+  }
+});
+app.delete("/api/data", async (req, res) => {
+  try {
+    await writeDB([]);
+
+    return res.json({
+      success: true,
+      message: "Todos los datos han sido eliminados correctamente",
+    });
+  } catch (error) {
+    console.error("Error al borrar datos:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Error al borrar datos",
+      details: error.message,
+    });
   }
 });
 
@@ -265,13 +285,11 @@ app.get("/api/data", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching data:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: "Error al leer datos",
-        details: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      error: "Error al leer datos",
+      details: error.message,
+    });
   }
 });
 
