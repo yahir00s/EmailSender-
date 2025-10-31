@@ -1,23 +1,17 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import React, { useState } from "react";
 import { Colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import AnimatedAlert from "./animatedAlert";
 import { useAlert } from "@/context/AlertContext";
 import { BACKEND } from "@/app/config";
 
 interface ButtonSendIndividualProps {
-  data: any;
+  data?: any;
   onSuccess?: () => void;
 }
-
-const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
-  data,
-  onSuccess,
-}) => {
+const ButtonSendToAll = ({ data, onSuccess }: ButtonSendIndividualProps) => {
   const { showAlert } = useAlert();
   const [sending, setSending] = useState(false);
-
   const handleSendMessage = async () => {
     if (sending) return;
 
@@ -30,7 +24,7 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
         },
         body: JSON.stringify(data),
       });
-      console.log(data)
+      console.log(data);
 
       const result = await response.json();
 
@@ -50,35 +44,27 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
       setSending(false);
     }
   };
-
   return (
-    <View>
-      <Pressable
-        style={[styles.container, sending && styles.sending]}
-        onPress={handleSendMessage}
-        disabled={sending}
-      >
-        <Ionicons
-          name={sending ? "hourglass" : "send"}
-          size={24}
-          color={sending ? Colors.light.tint : "black"}
-        />
-      </Pressable>
+    <View style={styles.container}>
+      <Text style={styles.text}>Enviar mensaje a todos los correos</Text>
+      <Ionicons name={"send"} size={24} color={"white"} />
     </View>
   );
 };
 
-export default ButtonSendIndividual;
+export default ButtonSendToAll;
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 8,
-    borderRadius: 8,
+    width: "100%",
+    backgroundColor: Colors.light.primary,
+    padding: 20,
+    borderRadius: 10,
+    marginVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  sending: {
-    opacity: 0.7,
-    backgroundColor: Colors.light.background,
+  text: {
+    color: "white",
   },
 });

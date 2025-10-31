@@ -55,7 +55,6 @@ export default CardUser;
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
   },
   userRow: {
     flexDirection: "row",

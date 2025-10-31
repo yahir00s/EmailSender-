@@ -9,10 +9,11 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AlertProvider } from "@/context/AlertContext";
+import CustomHeader from "@/components/ui/custom-header";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+// export const unstable_settings = {
+//   anchor: "(tabs)",
+// };
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -21,10 +22,12 @@ export default function RootLayout() {
     <AlertProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
+            name="add"
+            options={{
+              header: () => <CustomHeader title="Agregar" />,
+            }}
           />
         </Stack>
         <StatusBar style="auto" />
