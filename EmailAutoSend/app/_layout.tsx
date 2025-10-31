@@ -8,7 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { AlertProvider } from "@/context/AlertContext";
+import { AppProvider } from "@/context/AppProvider";
 import CustomHeader from "@/components/ui/custom-header";
 
 // export const unstable_settings = {
@@ -19,7 +19,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <AlertProvider>
+    <AppProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -32,6 +32,6 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
-    </AlertProvider>
+    </AppProvider>
   );
 }

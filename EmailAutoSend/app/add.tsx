@@ -5,10 +5,12 @@ import * as DocumentPicker from "expo-document-picker";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors } from "@/constants/theme";
 import { useUploadJson } from "@/hooks/use-upload-json";
+import { useAlert } from "@/context/AlertContext";
 
 const Add = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const { uploadJson, isLoading, error } = useUploadJson();
+  const { showAlert } = useAlert();
 
   const pickDocument = async () => {
     try {
@@ -36,19 +38,11 @@ const Add = () => {
 
     try {
       const result = await uploadJson(selectedFile.uri);
-      
-      Alert.alert(
-        "Éxito", 
-        `Archivo cargado correctamente\nID: ${result.entry?.id}`,
-        [
-          {
-            text: "OK",
-            onPress: () => setSelectedFile(null),
-          },
-        ]
-      );
+      showAlert("Archivo subido correctamente", "success");
+      setSelectedFile(null);
+
     } catch (error: any) {
-      Alert.alert("Error", error.message || "No se pudo subir el archivo");
+      showAlert("Error al subir el archivo", "error");
     }
   };
 
@@ -59,7 +53,6 @@ const Add = () => {
   return (
     <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
       <View style={styles.content}>
-        {/* Área de subida */}
         <Pressable
           style={styles.uploadArea}
           onPress={pickDocument}

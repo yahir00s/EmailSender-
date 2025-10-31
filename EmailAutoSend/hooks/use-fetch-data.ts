@@ -1,12 +1,13 @@
 // hooks/useFetchData.ts
 import { BACKEND } from "@/app/config";
 import { useState, useEffect } from "react";
+import { useUsers } from "@/context/UsersContext";
 
 interface DataItem {
   id: number;
   createdAt: string;
   data: {
-    [key: string]: string; 
+    [key: string]: string;
   };
 }
 
@@ -31,13 +32,14 @@ interface UseFetchDataReturn {
   refetch: () => void;
 }
 
-export const useFetchData = ({ 
-  page = 1, 
-  limit = 10 
+export const useFetchData = ({
+  page = 1,
+  limit = 10,
 }: UseFetchDataParams = {}): UseFetchDataReturn => {
   const [data, setData] = useState<FetchDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setUsers } = useUsers();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -54,6 +56,12 @@ export const useFetchData = ({
 
       const result: FetchDataResponse = await response.json();
       setData(result);
+
+      // Actualizar el estado global de usuarios
+      if (result.success && result.items) {
+        const users = result.items.map((item) => item.data);
+        setUsers(users);
+      }
     } catch (err: any) {
       setError(err.message || "Error desconocido");
       console.error("Error fetching data:", err);

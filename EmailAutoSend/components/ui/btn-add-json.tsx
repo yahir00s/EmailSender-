@@ -1,15 +1,26 @@
-import { Pressable, StyleSheet, Text, View, Animated, Alert } from "react-native";
-import React, { useState, useRef } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  Animated,
+  Alert,
+} from "react-native";
+import React, { useState, useRef, use } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Colors } from "@/constants/theme";
 import { router } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDeleteAllData } from "@/hooks/use-delete-al-data";
+import { useUsers } from "@/context/UsersContext";
+import { useAlert } from "@/context/AlertContext";
 
 const ButtonAddJson = () => {
   const [isVisible, setIsVisible] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const { deleteAllData, isLoading } = useDeleteAllData();
+  const { clearUsers } = useUsers();
+  const { showAlert } = useAlert();
 
   const handleToggle = () => {
     const toValue = isVisible ? 0 : 1;
@@ -36,10 +47,11 @@ const ButtonAddJson = () => {
           onPress: async () => {
             try {
               await deleteAllData();
-              Alert.alert("Éxito", "Todos los datos han sido eliminados");
+              clearUsers(); // Limpiar el contexto de usuarios
+              showAlert("Todos los datos han sido eliminados", "success");
               setIsVisible(false);
             } catch (error: any) {
-              Alert.alert("Error", error.message || "No se pudo eliminar los datos");
+              showAlert("No se pudo eliminar los datos", "error");
             }
           },
         },
@@ -71,15 +83,15 @@ const ButtonAddJson = () => {
             },
           ]}
         >
-          <Pressable 
-            style={styles.option} 
+          <Pressable
+            style={styles.option}
             onPress={handleAddEmails}
             disabled={isLoading}
           >
-            <Ionicons 
-              name="add-circle-outline" 
-              size={18} 
-              color={Colors.light.primary} 
+            <Ionicons
+              name="add-circle-outline"
+              size={18}
+              color={Colors.light.primary}
               style={styles.icon}
             />
             <Text style={styles.optionText}>Agregar emails</Text>
@@ -90,9 +102,9 @@ const ButtonAddJson = () => {
             onPress={handleDeleteAll}
             disabled={isLoading}
           >
-            <Ionicons 
-              name="trash-outline" 
-              size={18} 
+            <Ionicons
+              name="trash-outline"
+              size={18}
               color="#e74c3c"
               style={styles.icon}
             />
@@ -143,10 +155,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     elevation: 3,
-
   },
-  dangerOption: {
-  },
+  dangerOption: {},
   optionText: {
     fontSize: 14,
     color: "#333",
@@ -163,6 +173,5 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     padding: 10,
     elevation: 5,
-
   },
 });

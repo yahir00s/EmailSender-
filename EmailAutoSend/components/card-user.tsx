@@ -1,8 +1,17 @@
-import { StyleSheet, Text, View, FlatList, ActivityIndicator } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import React, { useState } from "react";
 import { Colors } from "@/constants/theme";
 import ButtonSendIndividual from "./ui/btn-send-individual";
 import { useFetchData } from "@/hooks/use-fetch-data";
+import ButtonSendToAll from "./ui/btn-send-to-all";
+import { useUsers } from "@/context/UsersContext";
 
 interface User {
   name: string;
@@ -11,20 +20,19 @@ interface User {
 
 const CardUser = () => {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error } = useFetchData({
+  const { data, isLoading, error, refetch } = useFetchData({
     page,
     limit: 10,
   });
+  const { users: globalUsers } = useUsers();
 
-  // Transformar los datos del API a un array de usuarios
+  // Transformar los datos del contexto a un array de usuarios
   const users: User[] = React.useMemo(() => {
-    if (!data?.items || data.items.length === 0) return [];
+    if (!globalUsers || globalUsers.length === 0) return [];
 
-    // Obtener todos los usuarios de todos los items
     const allUsers: User[] = [];
-    
-    data.items.forEach((item) => {
-      Object.entries(item.data).forEach(([name, email]) => {
+    globalUsers.forEach((userData) => {
+      Object.entries(userData).forEach(([name, email]) => {
         allUsers.push({
           name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalizar
           email,
@@ -33,7 +41,7 @@ const CardUser = () => {
     });
 
     return allUsers;
-  }, [data]);
+  }, [globalUsers]);
 
   const handleSendSuccess = (name: string) => {
     console.log(`Correo enviado correctamente a ${name}`);
