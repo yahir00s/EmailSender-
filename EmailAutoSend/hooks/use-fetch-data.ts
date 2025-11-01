@@ -34,7 +34,7 @@ interface UseFetchDataReturn {
 
 export const useFetchData = ({
   page = 1,
-  limit = 10,
+  limit = 8,
 }: UseFetchDataParams = {}): UseFetchDataReturn => {
   const [data, setData] = useState<FetchDataResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);

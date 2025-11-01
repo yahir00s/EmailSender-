@@ -12,13 +12,18 @@ import ButtonSendIndividual from "./ui/btn-send-individual";
 import { useFetchData } from "@/hooks/use-fetch-data";
 import ButtonSendToAll from "./ui/btn-send-to-all";
 import { useUsers } from "@/context/UsersContext";
+import AvatarCircle from "./ui/avatar-circle";
 
 interface User {
   name: string;
   email: string;
 }
 
-const CardUser = () => {
+interface CardUserProps {
+  searchQuery?: string;
+}
+
+const CardUser = ({ searchQuery = "" }: CardUserProps) => {
   const [page, setPage] = useState(1);
   const { data, isLoading, error, refetch } = useFetchData({
     page,
@@ -26,7 +31,7 @@ const CardUser = () => {
   });
   const { users: globalUsers } = useUsers();
 
-  // Transformar los datos del contexto a un array de usuarios
+  // Transformar los datos del contexto a un array de usuarios y aplicar filtro
   const users: User[] = React.useMemo(() => {
     if (!globalUsers || globalUsers.length === 0) return [];
 
@@ -40,8 +45,18 @@ const CardUser = () => {
       });
     });
 
+    // Aplicar filtro si hay una búsqueda
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return allUsers.filter(
+        (user) =>
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query)
+      );
+    }
+
     return allUsers;
-  }, [globalUsers]);
+  }, [globalUsers, searchQuery]);
 
   const handleSendSuccess = (name: string) => {
     console.log(`Correo enviado correctamente a ${name}`);
@@ -77,7 +92,8 @@ const CardUser = () => {
 
     return (
       <View style={styles.userRow}>
-        <View style={styles.userInfo}>
+        <AvatarCircle name={item.name} />
+        <View style={[styles.userInfo, styles.userInfoWithAvatar]}>
           <Text style={styles.nameText}>Nombre: {item.name}</Text>
           <Text style={styles.emailText}>Correo: {item.email}</Text>
         </View>
@@ -112,12 +128,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.light.background,
     borderRadius: 10,
-    padding: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 17,
     marginBottom: 10,
     elevation: 5,
   },
   userInfo: {
     flex: 1,
+  },
+  userInfoWithAvatar: {
+    marginLeft: 12,
   },
   nameText: {
     fontSize: 16,
