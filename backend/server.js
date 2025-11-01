@@ -294,14 +294,21 @@ app.get("/api/data", async (req, res) => {
 });
 
 // Endpoint para enviar correos masivos
+// Endpoint para enviar correos masivos
 app.post("/api/send-bulk-emails", async (req, res) => {
   try {
-    const { users } = req.body;
+    const body = req.body; // Ej: { "yahir": "yairjesus49@gmail.com", "juan": "juan@example.com" }
 
-    if (!users || !Array.isArray(users) || users.length === 0) {
+    // Convertir el objeto a un array de usuarios
+    const users = Object.entries(body).map(([name, email]) => ({
+      name,
+      email,
+    }));
+
+    if (!users || users.length === 0) {
       return res.status(400).json({
         success: false,
-        error: "Se requiere un array de usuarios",
+        error: "No se proporcionaron usuarios",
       });
     }
 

@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "id": 1,
+    "createdAt": "2025-11-01T21:05:03.527Z",
+    "data": {
+      "yahir": "yacevedo1@ucol.mx",
+      "oscar": "oscar@test.app",
+      "joaquin": "joaquin@test.app",
+      "maria": "maria@test.app",
+      "carlos": "carlos@test.app",
+      "laura": "laura@test.app",
+      "diego": "diego@test.app",
+      "sofia": "sofia@test.app",
+      "miguel": "miguel@test.app",
+      "ana": "ana@test.app",
+      "roberto": "roberto@test.app"
+    }
+  }
+]
