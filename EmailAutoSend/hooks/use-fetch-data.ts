@@ -64,27 +64,52 @@ export const useFetchData = ({
     setError(null);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+
       const response = await fetch(
-        `${BACKEND}/api/data?page=${pageToFetch}&limit=${limit}`
+        `${BACKEND}/api/data?page=${pageToFetch}&limit=${limit}`,
+        { signal: controller.signal }
       );
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
+        // Si el servidor responde pero sin datos (404, 204, etc.)
+        if (response.status === 404 || response.status === 204) {
+          // Manejar como respuesta vacía sin lanzar error
+          setData({
+            success: true,
+            page: pageToFetch,
+            limit,
+            total: 0,
+            hasMore: false,
+            items: [],
+          });
+          setUsers([]);
+          setIsOffline(false);
+          return;
+        }
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const result: FetchDataResponse = await response.json();
 
+      // Validar que la respuesta tenga la estructura esperada
+      if (!result || typeof result !== 'object') {
+        throw new Error('Respuesta inválida del servidor');
+      }
+
       if (isLoadingMore && data) {
         setData({
           ...result,
-          items: [...data.items, ...result.items],
+          items: [...data.items, ...(result.items || [])],
         });
       } else {
         setData(result);
       }
 
       if (result.success) {
-        // Guardar datos en AsyncStorage para uso offline
         await saveUserDataToStorage(result);
 
         if (result.items && result.items.length > 0) {
@@ -97,30 +122,46 @@ export const useFetchData = ({
         } else {
           setUsers([]);
         }
-        setIsOffline(false); // Conexión exitosa
+        setIsOffline(false);
       }
     } catch (err: any) {
+      // Suprimir errores en consola de Expo
       const errorMessage = err.message || "Error desconocido";
 
-      if (
+      // Detectar errores de red
+      const isNetworkError =
+        err.name === 'AbortError' ||
         errorMessage.includes("Network request failed") ||
         errorMessage.includes("Failed to fetch") ||
-        errorMessage.includes("fetch")
-      ) {
-        // Error de red - intentar cargar datos desde AsyncStorage
-        setIsOffline(true);
-        const cachedData = await loadUserDataFromStorage();
+        errorMessage.includes("fetch") ||
+        errorMessage.includes("Network Error") ||
+        errorMessage.includes("timeout");
 
-        if (cachedData && cachedData.items && cachedData.items.length > 0) {
-          // Hay datos en caché, usar esos datos
-          setData(cachedData);
-          const cachedUsers = cachedData.items.map((item) => item.data);
-          setUsers(cachedUsers);
-          setError(null);
-          // Asegurar que isLoading se establezca en false cuando hay datos en caché
-          setIsLoading(false);
-        } else {
-          // No hay datos en caché
+      if (isNetworkError) {
+        setIsOffline(true);
+        
+        try {
+          const cachedData = await loadUserDataFromStorage();
+
+          if (cachedData && cachedData.items && cachedData.items.length > 0) {
+            setData(cachedData);
+            const cachedUsers = cachedData.items.map((item) => item.data);
+            setUsers(cachedUsers);
+            setError(null); 
+          } else {
+            setData({
+              success: true,
+              page: 1,
+              limit,
+              total: 0,
+              hasMore: false,
+              items: [],
+            });
+            setUsers([]);
+            setError(null); 
+          }
+        } catch (cacheError) {
+          console.warn("No se pudo cargar datos en caché");
           setData({
             success: true,
             page: 1,
@@ -131,39 +172,51 @@ export const useFetchData = ({
           });
           setUsers([]);
           setError(null);
-          // Asegurarse de que isLoading se establezca en false
-          setIsLoading(false);
         }
       } else {
-        // Otro tipo de error
-        setError(errorMessage);
+
+        if (__DEV__) {
+          console.warn("Error fetching data:", errorMessage);
+        }
+        setError(null); 
         setIsOffline(false);
+        
+        try {
+          const cachedData = await loadUserDataFromStorage();
+          if (cachedData) {
+            setData(cachedData);
+            const cachedUsers = cachedData.items.map((item) => item.data);
+            setUsers(cachedUsers);
+          }
+        } catch {
+        }
       }
-      console.error("Error fetching data:", err);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
   const loadMore = async () => {
-     if (!data?.hasMore || isLoadingMore) return;
-     const nextPage = currentPage + 1;
-     try {
-       await fetchData(nextPage, true);
-       setCurrentPage(nextPage);
-     } finally {
-       setIsLoadingMore(false);
-     }
+    if (!data?.hasMore || isLoadingMore) return;
+    const nextPage = currentPage + 1;
+    try {
+      await fetchData(nextPage, true);
+      setCurrentPage(nextPage);
+    } catch (err) {
+      if (__DEV__) {
+        console.warn("Error loading more:", err);
+      }
+    }
   };
 
   const refetch = useCallback(() => {
-     setCurrentPage(page);
-     setData(null);
-     setIsLoading(true); // Asegurar que se muestre el loader al refrescar
-     setRefreshKey((prev) => prev + 1); 
+    setCurrentPage(page);
+    setData(null);
+    setIsLoading(true);
+    setRefreshKey((prev) => prev + 1);
   }, [page]);
 
-  // Cargar datos desde AsyncStorage al inicio
   useEffect(() => {
     const loadCachedData = async () => {
       try {
@@ -172,29 +225,24 @@ export const useFetchData = ({
           setData(cachedData);
           const cachedUsers = cachedData.items.map((item) => item.data);
           setUsers(cachedUsers);
-          // Mostrar datos del caché inmediatamente, pero seguir cargando en segundo plano
           setIsLoading(false);
-        } else {
-          // No hay datos en caché, mantener isLoading en true hasta obtener del servidor
         }
-        // Intentar obtener datos del servidor (actualizar caché)
-        await fetchData(page);
       } catch (error) {
-        // Si hay error cargando del caché, intentar obtener del servidor
-        console.error("Error loading cached data:", error);
+        if (__DEV__) {
+          console.warn("Error loading cached data:", error);
+        }
+      } finally {
         await fetchData(page);
       }
     };
 
     loadCachedData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-   useEffect(() => {
-     if (refreshKey > 0) {
-       fetchData(page, false);
-     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (refreshKey > 0) {
+      fetchData(page, false);
+    }
   }, [refreshKey]);
 
   return {

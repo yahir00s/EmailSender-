@@ -52,13 +52,12 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     data.items.forEach((item) => {
       Object.entries(item.data).forEach(([name, email]) => {
         allUsers.push({
-          name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalizar
+          name: name.charAt(0).toUpperCase() + name.slice(1), 
           email,
         });
       });
     });
 
-    // Aplicar filtro si hay una búsqueda
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       return allUsers.filter(
@@ -81,7 +80,7 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
         {onSearchChange && (
           <SearchBar value={searchQuery} onChangeText={onSearchChange} />
         )}
-        {isOffline && (
+        {isOffline && (!data?.items || data.items.length!== 0) && (
           <View style={styles.offlineBanner}>
             <Text style={styles.offlineText}>
               No tienes conexión
@@ -142,7 +141,6 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     );
   };
 
-  // Si no hay usuarios pero estamos cargando más, mostrar lista vacía con header
   if (users.length === 0) {
     return (
       <>

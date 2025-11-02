@@ -21,7 +21,6 @@ interface FetchDataResponse {
   }>;
 }
 
-// Guardar datos de usuarios en AsyncStorage
 export const saveUserDataToStorage = async (data: FetchDataResponse): Promise<void> => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data));
@@ -31,7 +30,6 @@ export const saveUserDataToStorage = async (data: FetchDataResponse): Promise<vo
   }
 };
 
-// Cargar datos de usuarios desde AsyncStorage
 export const loadUserDataFromStorage = async (): Promise<FetchDataResponse | null> => {
   try {
     const dataString = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
@@ -45,7 +43,6 @@ export const loadUserDataFromStorage = async (): Promise<FetchDataResponse | nul
   }
 };
 
-// Obtener última sincronización
 export const getLastSync = async (): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC);
@@ -55,7 +52,6 @@ export const getLastSync = async (): Promise<string | null> => {
   }
 };
 
-// Limpiar todos los datos almacenados
 export const clearStorage = async (): Promise<void> => {
   try {
     await AsyncStorage.multiRemove([

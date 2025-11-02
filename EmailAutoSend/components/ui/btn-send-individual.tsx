@@ -35,7 +35,7 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
       const result = await response.json();
 
       if (result.success) {
-        showAlert("Datos enviados correctamente", "success");
+        showAlert("email enviado correctamente", "success");
         onSuccess?.();
       } else {
         throw new Error(result.error || "Error al enviar datos");
