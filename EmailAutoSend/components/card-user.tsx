@@ -6,13 +6,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import { Colors } from "@/constants/theme";
 import ButtonSendIndividual from "./ui/btn-send-individual";
 import { useFetchData } from "@/hooks/use-fetch-data";
 import ButtonSendToAll from "./ui/btn-send-to-all";
 import { useUsers } from "@/context/UsersContext";
 import AvatarCircle from "./ui/avatar-circle";
+import { useFocusEffect } from "expo-router";
+import SearchBar from "./ui/search-bar";
 
 interface User {
   name: string;
@@ -21,23 +23,41 @@ interface User {
 
 interface CardUserProps {
   searchQuery?: string;
+  onSearchChange?: (text: string) => void;
 }
 
-const CardUser = ({ searchQuery = "" }: CardUserProps) => {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, error, refetch } = useFetchData({
-    page,
-    limit: 10,
+const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
+  const { 
+    data, 
+    isLoading, 
+    error, 
+    refetch,
+    hasMore,
+    loadMore,
+    isLoadingMore 
+  } = useFetchData({
+    limit: 8,
   });
-  const { users: globalUsers } = useUsers();
+  const { refreshTrigger } = useUsers();
 
-  // Transformar los datos del contexto a un array de usuarios y aplicar filtro
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  React.useEffect(() => {
+    if (refreshTrigger > 0) {
+      refetch();
+    }
+  }, [refreshTrigger, refetch]);
+
   const users: User[] = React.useMemo(() => {
-    if (!globalUsers || globalUsers.length === 0) return [];
+    if (!data?.items || data.items.length === 0) return [];
 
     const allUsers: User[] = [];
-    globalUsers.forEach((userData) => {
-      Object.entries(userData).forEach(([name, email]) => {
+    data.items.forEach((item) => {
+      Object.entries(item.data).forEach(([name, email]) => {
         allUsers.push({
           name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalizar
           email,
@@ -56,10 +76,21 @@ const CardUser = ({ searchQuery = "" }: CardUserProps) => {
     }
 
     return allUsers;
-  }, [globalUsers, searchQuery]);
+  }, [data?.items, searchQuery]);
 
   const handleSendSuccess = (name: string) => {
     console.log(`Correo enviado correctamente a ${name}`);
+  };
+
+  const renderHeader = () => {
+    return (
+      <View style={styles.header}>
+        {onSearchChange && (
+          <SearchBar value={searchQuery} onChangeText={onSearchChange} />
+        )}
+        <ButtonSendToAll />
+      </View>
+    );
   };
 
   if (isLoading) {
@@ -71,18 +102,14 @@ const CardUser = ({ searchQuery = "" }: CardUserProps) => {
     );
   }
 
-  if (error) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-      </View>
-    );
-  }
+  // Verificar si hay datos pero están vacíos (no es un error, solo no hay usuarios)
+  const hasDataButEmpty = data && data.success && (!data.items || data.items.length === 0);
 
-  if (users.length === 0) {
+  if (error && !hasDataButEmpty) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No hay usuarios disponibles</Text>
+        {renderHeader()}
+        <Text style={styles.errorText}>Error: {error}</Text>
       </View>
     );
   }
@@ -105,6 +132,42 @@ const CardUser = ({ searchQuery = "" }: CardUserProps) => {
     );
   };
 
+  const renderFooter = () => {
+    if (!hasMore) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" color={Colors.light.primary} />
+        <Text style={styles.footerText}>Cargando más usuarios...</Text>
+      </View>
+    );
+  };
+
+  // Si no hay usuarios pero estamos cargando más, mostrar lista vacía con header
+  if (users.length === 0) {
+    return (
+      <FlatList
+        data={[]}
+        keyExtractor={() => "empty"}
+        renderItem={() => null}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Aún no has agregado usuarios</Text>
+          </View>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            colors={[Colors.light.primary]}
+          />
+        }
+      />
+    );
+  }
+
   return (
     <FlatList
       data={users}
@@ -112,6 +175,17 @@ const CardUser = ({ searchQuery = "" }: CardUserProps) => {
       renderItem={renderItem}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      onEndReached={hasMore ? loadMore : undefined}
+      onEndReachedThreshold={0.5}
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={isLoadingMore ? renderFooter : null}
+      refreshControl={
+        <RefreshControl
+          refreshing={isLoading}
+          onRefresh={refetch}
+          colors={[Colors.light.primary]}
+        />
+      }
     />
   );
 };
@@ -120,9 +194,15 @@ export default CardUser;
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 100, // Espacio para el botón flotante
+    paddingBottom: 100, 
+    
+  },
+  header: {
+    marginBottom: 0,
   },
   userRow: {
+    borderWidth: 1,
+    borderColor: "#ccc",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -164,9 +244,26 @@ const styles = StyleSheet.create({
     color: "#e74c3c",
     textAlign: "center",
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
   emptyText: {
     fontSize: 16,
     color: "#666",
     textAlign: "center",
+  },
+  footer: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  footerText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#666",
   },
 });

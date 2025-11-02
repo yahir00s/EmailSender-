@@ -19,8 +19,9 @@ const ButtonAddJson = () => {
   const [isVisible, setIsVisible] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const { deleteAllData, isLoading } = useDeleteAllData();
-  const { clearUsers } = useUsers();
+  const { clearUsers, triggerRefresh } = useUsers();
   const { showAlert } = useAlert();
+  
 
   const handleToggle = () => {
     const toValue = isVisible ? 0 : 1;
@@ -48,6 +49,7 @@ const ButtonAddJson = () => {
             try {
               await deleteAllData();
               clearUsers(); // Limpiar el contexto de usuarios
+              triggerRefresh(); // Disparar refresh de datos paginados
               showAlert("Todos los datos han sido eliminados", "success");
               setIsVisible(false);
             } catch (error: any) {

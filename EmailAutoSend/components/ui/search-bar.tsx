@@ -1,6 +1,7 @@
 import { StyleSheet, TextInput, View, useColorScheme } from "react-native";
 import React from "react";
 import { Colors } from "@/constants/theme";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 interface SearchBarProps {
   value: string;
@@ -13,20 +14,27 @@ const SearchBar = ({ value, onChangeText }: SearchBarProps) => {
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.background,
-            color: theme.text,
-          },
-        ]}
-        placeholder="Buscar por nombre o email..."
-        placeholderTextColor={theme.icon}
-        value={value}
-        onChangeText={onChangeText}
-        autoCapitalize="none"
-      />
+      <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
+        <Ionicons 
+          name="search" 
+          size={20} 
+          color={theme.icon || "#666"} 
+          style={styles.icon}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            {
+              color: theme.text,
+            },
+          ]}
+          placeholder="Buscar por nombre o email..."
+          placeholderTextColor={theme.icon}
+          value={value}
+          onChangeText={onChangeText}
+          autoCapitalize="none"
+        />
+      </View>
     </View>
   );
 };
@@ -37,15 +45,19 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 10,
   },
-  input: {
-    padding: 15,
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingHorizontal: 15,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 15,
   },
 });
