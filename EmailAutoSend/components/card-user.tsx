@@ -27,17 +27,10 @@ interface CardUserProps {
 }
 
 const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
-  const { 
-    data, 
-    isLoading, 
-    error, 
-    refetch,
-    hasMore,
-    loadMore,
-    isLoadingMore 
-  } = useFetchData({
-    limit: 8,
-  });
+  const { data, isLoading, error, refetch, hasMore, loadMore, isLoadingMore } =
+    useFetchData({
+      limit: 8,
+    });
   const { refreshTrigger } = useUsers();
 
   useFocusEffect(
@@ -103,7 +96,8 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
   }
 
   // Verificar si hay datos pero están vacíos (no es un error, solo no hay usuarios)
-  const hasDataButEmpty = data && data.success && (!data.items || data.items.length === 0);
+  const hasDataButEmpty =
+    data && data.success && (!data.items || data.items.length === 0);
 
   if (error && !hasDataButEmpty) {
     return (
@@ -169,24 +163,27 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
   }
 
   return (
-    <FlatList
-      data={users}
-      keyExtractor={(item, index) => `${item.email}-${index}`}
-      renderItem={renderItem}
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-      onEndReached={hasMore ? loadMore : undefined}
-      onEndReachedThreshold={0.5}
-      ListHeaderComponent={renderHeader}
-      ListFooterComponent={isLoadingMore ? renderFooter : null}
-      refreshControl={
-        <RefreshControl
-          refreshing={isLoading}
-          onRefresh={refetch}
-          colors={[Colors.light.primary]}
-        />
-      }
-    />
+    <>
+      {renderHeader()}
+      <FlatList
+        data={users}
+        keyExtractor={(item, index) => `${item.email}-${index}`}
+        renderItem={renderItem}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        onEndReached={hasMore ? loadMore : undefined}
+        onEndReachedThreshold={0.5}
+        // ListHeaderComponent={renderHeader}
+        ListFooterComponent={isLoadingMore ? renderFooter : null}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            colors={[Colors.light.primary]}
+          />
+        }
+      />
+    </>
   );
 };
 
@@ -194,8 +191,7 @@ export default CardUser;
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 100, 
-    
+    paddingBottom: 100,
   },
   header: {
     marginBottom: 0,
