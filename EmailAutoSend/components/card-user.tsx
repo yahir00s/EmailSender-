@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 17,
     marginBottom: 10,
-    elevation: 5,
   },
   userInfo: {
     flex: 1,

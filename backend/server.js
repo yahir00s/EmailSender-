@@ -263,18 +263,61 @@ app.delete("/api/data", async (req, res) => {
 // Query params: page (1-based), limit
 app.get("/api/data", async (req, res) => {
   try {
+    // Validar y convertir los parámetros de la query
     const page = Math.max(1, parseInt(req.query.page || "1", 10));
     const limit = Math.max(
       1,
       Math.min(100, parseInt(req.query.limit || "20", 10))
     );
 
+    // Leer la base de datos
     const db = await readDB();
-    const total = db.length;
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const items = db.slice(start, end);
 
+    // Si la base de datos está vacía, devolver respuesta vacía
+    if (!db || !Array.isArray(db) || db.length === 0) {
+      return res.json({
+        success: true,
+        page,
+        limit,
+        total: 0,
+        hasMore: false,
+        items: [],
+      });
+    }
+
+    // Convertir los datos en un formato más adecuado para la paginación
+    const allItems = db
+      .map((entry) => {
+        const users = Object.entries(entry.data).map(([name, email]) => ({
+          id: entry.id,
+          createdAt: entry.createdAt,
+          data: { [name]: email },
+        }));
+        return users;
+      })
+      .flat();
+
+    // Calcular índices de paginación
+    const total = allItems.length;
+    const start = (page - 1) * limit;
+
+    // Verificar si la página solicitada está fuera de rango
+    if (start >= total) {
+      return res.json({
+        success: true,
+        page,
+        limit,
+        total,
+        hasMore: false,
+        items: [],
+      });
+    }
+
+    // Obtener los elementos de la página actual
+    const end = Math.min(start + limit, total);
+    const items = allItems.slice(start, end);
+
+    // Enviar respuesta
     res.json({
       success: true,
       page,
