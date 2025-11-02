@@ -1,6 +1,7 @@
 // Context para manejar el estado global de usuarios
 import { BACKEND } from "@/app/config";
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface User {
   [key: string]: string; // formato { "Nombre": "email" }
@@ -19,11 +20,48 @@ interface UsersContextType {
 
 const UsersContext = createContext<UsersContextType | undefined>(undefined);
 
+const STORAGE_KEY = "@emailautosend:users";
+
 export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Cargar usuarios desde AsyncStorage al inicio
+  useEffect(() => {
+    const loadUsersFromStorage = async () => {
+      try {
+        const storedUsers = await AsyncStorage.getItem(STORAGE_KEY);
+        if (storedUsers) {
+          const parsedUsers = JSON.parse(storedUsers);
+          setUsers(parsedUsers);
+        }
+      } catch (error) {
+        console.error("Error loading users from storage:", error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    loadUsersFromStorage();
+  }, []);
+
+  // Guardar usuarios en AsyncStorage cuando cambian
+  useEffect(() => {
+    if (isInitialized) {
+      const saveUsersToStorage = async () => {
+        try {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        } catch (error) {
+          console.error("Error saving users to storage:", error);
+        }
+      };
+
+      saveUsersToStorage();
+    }
+  }, [users, isInitialized]);
 
   const addUser = useCallback((user: User) => {
     setUsers((prev) => [...prev, user]);
@@ -33,8 +71,13 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     setUsers((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const clearUsers = useCallback(() => {
+  const clearUsers = useCallback(async () => {
     setUsers([]);
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.error("Error clearing users from storage:", error);
+    }
   }, []);
 
   const refreshUsers = useCallback(async () => {
@@ -52,7 +95,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const triggerRefresh = useCallback(() => {
-    setRefreshTrigger((prev) => prev + 1);
+     setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   return (

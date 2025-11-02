@@ -27,7 +27,7 @@ interface CardUserProps {
 }
 
 const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
-  const { data, isLoading, error, refetch, hasMore, loadMore, isLoadingMore } =
+  const { data, isLoading, error, refetch, hasMore, loadMore, isLoadingMore, isOffline } =
     useFetchData({
       limit: 8,
     });
@@ -81,6 +81,13 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
         {onSearchChange && (
           <SearchBar value={searchQuery} onChangeText={onSearchChange} />
         )}
+        {isOffline && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>
+              No tienes conexión
+            </Text>
+          </View>
+        )}
         <ButtonSendToAll />
       </View>
     );
@@ -95,7 +102,6 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     );
   }
 
-  // Verificar si hay datos pero están vacíos (no es un error, solo no hay usuarios)
   const hasDataButEmpty =
     data && data.success && (!data.items || data.items.length === 0);
 
@@ -139,13 +145,15 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
   // Si no hay usuarios pero estamos cargando más, mostrar lista vacía con header
   if (users.length === 0) {
     return (
+      <>
+      {renderHeader()}
       <FlatList
         data={[]}
         keyExtractor={() => "empty"}
         renderItem={() => null}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={renderHeader}
+        // ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Aún no has agregado usuarios</Text>
@@ -153,12 +161,13 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
         }
         refreshControl={
           <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            colors={[Colors.light.primary]}
+          refreshing={isLoading}
+          onRefresh={refetch}
+          colors={[Colors.light.primary]}
           />
         }
-      />
+        />
+        </>
     );
   }
 
@@ -195,6 +204,19 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 0,
+  },
+  offlineBanner: {
+    backgroundColor: "#ffa500",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  offlineText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
   },
   userRow: {
     borderWidth: 1,

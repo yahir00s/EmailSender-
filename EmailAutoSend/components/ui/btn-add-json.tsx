@@ -14,6 +14,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useDeleteAllData } from "@/hooks/use-delete-al-data";
 import { useUsers } from "@/context/UsersContext";
 import { useAlert } from "@/context/AlertContext";
+import { clearStorage } from "@/utils/storage";
 
 const ButtonAddJson = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -49,6 +50,7 @@ const ButtonAddJson = () => {
             try {
               await deleteAllData();
               clearUsers(); // Limpiar el contexto de usuarios
+              await clearStorage(); // Limpiar AsyncStorage
               triggerRefresh(); // Disparar refresh de datos paginados
               showAlert("Todos los datos han sido eliminados", "success");
               setIsVisible(false);

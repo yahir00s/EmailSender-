@@ -3,6 +3,10 @@ import { BACKEND } from "@/app/config";
 import { useState, useEffect, useCallback } from "react";
 import { useUsers } from "@/context/UsersContext";
 import type { User } from "@/context/UsersContext";
+import {
+  saveUserDataToStorage,
+  loadUserDataFromStorage,
+} from "@/utils/storage";
 
 interface DataItem {
   id: number;
@@ -31,6 +35,7 @@ interface UseFetchDataReturn {
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  isOffline?: boolean;
 }
 
 export const useFetchData = ({
@@ -45,6 +50,7 @@ export const useFetchData = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const { setUsers } = useUsers();
   const [currentPage, setCurrentPage] = useState(page);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -69,7 +75,6 @@ export const useFetchData = ({
       const result: FetchDataResponse = await response.json();
 
       if (isLoadingMore && data) {
-        // Agregar nuevos items a los existentes
         setData({
           ...result,
           items: [...data.items, ...result.items],
@@ -78,9 +83,10 @@ export const useFetchData = ({
         setData(result);
       }
 
-      // Actualizar el estado global de usuarios
       if (result.success) {
-        // Si hay items, actualizar usuarios. Si no hay items, limpiar la lista
+        // Guardar datos en AsyncStorage para uso offline
+        await saveUserDataToStorage(result);
+
         if (result.items && result.items.length > 0) {
           const newUsers = result.items.map((item) => item.data);
           if (isLoadingMore) {
@@ -89,34 +95,49 @@ export const useFetchData = ({
             setUsers(newUsers);
           }
         } else {
-          // No hay items, limpiar usuarios
           setUsers([]);
         }
+        setIsOffline(false); // Conexión exitosa
       }
     } catch (err: any) {
-      // Manejar errores de red y otros errores
       const errorMessage = err.message || "Error desconocido";
-      
-      // Si el error menciona "Network request failed" o "Failed to fetch"
-      // puede ser que el backend no esté disponible o no haya datos
-      if (errorMessage.includes("Network request failed") || 
-          errorMessage.includes("Failed to fetch") ||
-          errorMessage.includes("fetch")) {
-        // Establecer datos vacíos en lugar de mostrar error de red
-        // Esto permite que la UI muestre el mensaje apropiado
-        setData({
-          success: true,
-          page: 1,
-          limit,
-          total: 0,
-          hasMore: false,
-          items: [],
-        });
-        setUsers([]);
-        setError(null); // No mostrar error, mostrar mensaje de "aún no has agregado usuarios"
+
+      if (
+        errorMessage.includes("Network request failed") ||
+        errorMessage.includes("Failed to fetch") ||
+        errorMessage.includes("fetch")
+      ) {
+        // Error de red - intentar cargar datos desde AsyncStorage
+        setIsOffline(true);
+        const cachedData = await loadUserDataFromStorage();
+
+        if (cachedData && cachedData.items && cachedData.items.length > 0) {
+          // Hay datos en caché, usar esos datos
+          setData(cachedData);
+          const cachedUsers = cachedData.items.map((item) => item.data);
+          setUsers(cachedUsers);
+          setError(null);
+          // Asegurar que isLoading se establezca en false cuando hay datos en caché
+          setIsLoading(false);
+        } else {
+          // No hay datos en caché
+          setData({
+            success: true,
+            page: 1,
+            limit,
+            total: 0,
+            hasMore: false,
+            items: [],
+          });
+          setUsers([]);
+          setError(null);
+          // Asegurarse de que isLoading se establezca en false
+          setIsLoading(false);
+        }
       } else {
-        // Para otros errores (como 404, 500, etc.), mostrar el error
+        // Otro tipo de error
         setError(errorMessage);
+        setIsOffline(false);
       }
       console.error("Error fetching data:", err);
     } finally {
@@ -125,33 +146,55 @@ export const useFetchData = ({
   };
 
   const loadMore = async () => {
-    if (!data?.hasMore || isLoadingMore) return;
-    const nextPage = currentPage + 1;
-    try {
-      await fetchData(nextPage, true);
-      setCurrentPage(nextPage);
-    } finally {
-      setIsLoadingMore(false);
-    }
+     if (!data?.hasMore || isLoadingMore) return;
+     const nextPage = currentPage + 1;
+     try {
+       await fetchData(nextPage, true);
+       setCurrentPage(nextPage);
+     } finally {
+       setIsLoadingMore(false);
+     }
   };
 
   const refetch = useCallback(() => {
-    setCurrentPage(page);
-    setData(null); // Limpiar datos anteriores
-    setRefreshKey((prev) => prev + 1); // Forzar re-fetch
+     setCurrentPage(page);
+     setData(null);
+     setIsLoading(true); // Asegurar que se muestre el loader al refrescar
+     setRefreshKey((prev) => prev + 1); 
   }, [page]);
 
+  // Cargar datos desde AsyncStorage al inicio
   useEffect(() => {
-    fetchData(page);
+    const loadCachedData = async () => {
+      try {
+        const cachedData = await loadUserDataFromStorage();
+        if (cachedData) {
+          setData(cachedData);
+          const cachedUsers = cachedData.items.map((item) => item.data);
+          setUsers(cachedUsers);
+          // Mostrar datos del caché inmediatamente, pero seguir cargando en segundo plano
+          setIsLoading(false);
+        } else {
+          // No hay datos en caché, mantener isLoading en true hasta obtener del servidor
+        }
+        // Intentar obtener datos del servidor (actualizar caché)
+        await fetchData(page);
+      } catch (error) {
+        // Si hay error cargando del caché, intentar obtener del servidor
+        console.error("Error loading cached data:", error);
+        await fetchData(page);
+      }
+    };
+
+    loadCachedData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refetch cuando cambia refreshKey
-  useEffect(() => {
-    if (refreshKey > 0) {
-      fetchData(page, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   useEffect(() => {
+     if (refreshKey > 0) {
+       fetchData(page, false);
+     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
   return {
@@ -162,5 +205,6 @@ export const useFetchData = ({
     hasMore: data?.hasMore ?? false,
     loadMore,
     isLoadingMore,
+    isOffline,
   };
 };
