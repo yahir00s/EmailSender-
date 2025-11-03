@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+## COMPONENTES DEL SISTEMA:
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+1.  **CLIENTE (Mobile App - React Native/Expo):**
+    * App móvil `React Native`
+    * Context API (`DataContext`, `UsersContext`)
+    * Componentes principales:
+        * `CardUser` (lista de usuarios)
+        * `ButtonSendIndividual` (envío individual)
+        * `ButtonSendToAll` (envío masivo)
+        * `ButtonAddJson` (agregar/borrar)
+        * `SearchBar` (búsqueda)
+    * Hooks personalizados:
+        * `useFetchData` (obtener datos)
+        * `useBulkEmail` (envío masivo)
+        * `useUploadJson` (subir archivos)
+        * `useDeleteAllData` (borrar datos)
+    * `AsyncStorage` (persistencia local opcional)
+    * `Expo Document Picker` (selección de archivos)
+    * `Expo File System` (lectura de archivos)
 
-## Get started
+2.  **SERVIDOR BACKEND (Node.js + Express):**
+    * Puerto: `3000`
+    * Middleware:
+        * `CORS`
+        * `Express.json()`
+        * `Multer` (upload de archivos)
+        * `Morgan` (logging)
+    * Endpoints REST API:
+        * `GET /health` (health check)
+        * `POST /api/send-email` (envío individual)
+        * `POST /api/send-bulk-emails` (envío masivo)
+        * `POST /api/upload-json` (subir archivo JSON)
+        * `GET /api/data` (obtener datos con paginación)
+        * `DELETE /api/data` (borrar todos los datos)
 
-1. Install dependencies
+3.  **ALMACENAMIENTO:**
+    * `db.json` (archivo local en `/data/db.json`)
+    * Estructura: Array de objetos con `id`, `createdAt`, `data`
 
-   ```bash
-   npm install
-   ```
+4.  **SERVICIO DE EMAIL:**
+    * Gmail API con `OAuth2`
+    * `Nodemailer` como transporter
+    * Variables de entorno:
+        * `EMAIL_USER`
+        * `EMAIL_PASSWORD` (App Password)
+        * `GMAIL_CLIENT_ID` (opcional OAuth2)
+        * `GMAIL_CLIENT_SECRET` (opcional OAuth2)
+        * `GMAIL_REFRESH_TOKEN` (opcional OAuth2)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## FLUJO DE DATOS:
 
-In the output, you'll find options to open the app in a
+1.  **SUBIR CONTACTOS:**
+    Mobile App → Selecciona archivo JSON → Envía a `/api/upload-json` → Backend guarda en `db.json` → Responde con success
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+2.  **OBTENER CONTACTOS:**
+    Mobile App → Solicita `GET /api/data?page=1&limit=10` → Backend lee `db.json` → Responde con lista paginada → App muestra en `CardUser`
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+3.  **ENVÍO INDIVIDUAL:**
+    Mobile App → Usuario presiona botón → `POST /api/send-email` con `{nombre: email}` → Backend usa `Nodemailer` → Gmail envía correo → Responde con success
 
-## Get a fresh project
+4.  **ENVÍO MASIVO:**
+    Mobile App → Usuario presiona "Enviar a todos" → `POST /api/send-bulk-emails` con objeto de usuarios → Backend itera y envía con delay de 500ms → Responde con resultados (exitosos/fallidos)
 
-When you're ready, run:
+5.  **BORRAR DATOS:**
+    Mobile App → Usuario confirma borrado → `DELETE /api/data` → Backend escribe `[]` en `db.json` → Context actualiza UI
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+6.  **REFRESH/ACTUALIZACIÓN:**
+    Context Provider (`triggerRefresh`) → Incrementa `refreshKey` → Hook `useFetchData` escucha cambio → Hace nueva petición `GET` → Actualiza lista
