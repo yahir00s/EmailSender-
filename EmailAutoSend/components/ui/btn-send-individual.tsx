@@ -1,25 +1,34 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import React, { useState } from "react";
 import { Colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import AnimatedAlert from "./animatedAlert";
 import { useAlert } from "@/context/AlertContext";
+import { useUsers } from "@/context/UsersContext";
 import { BACKEND } from "@/app/config";
 
 interface ButtonSendIndividualProps {
   data: any;
+  email: string; // Agregar el email como prop
   onSuccess?: () => void;
 }
 
 const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
   data,
+  email,
   onSuccess,
 }) => {
   const { showAlert } = useAlert();
+  const { isSendingToAll, sendingIndividualEmails } = useUsers();
   const [sending, setSending] = useState(false);
 
+
+  const isLoading = sending || isSendingToAll || sendingIndividualEmails.has(email);
+  
+  // Deshabilitar si está cargando o si se está enviando a todos
+  const isDisabled = isLoading || isSendingToAll;
+
   const handleSendMessage = async () => {
-    if (sending) return;
+    if (isDisabled) return;
 
     setSending(true);
     try {
@@ -30,7 +39,6 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
         },
         body: JSON.stringify(data),
       });
-      console.log(data)
 
       const result = await response.json();
 
@@ -54,14 +62,18 @@ const ButtonSendIndividual: React.FC<ButtonSendIndividualProps> = ({
   return (
     <View>
       <Pressable
-        style={[styles.container, sending && styles.sending]}
+        style={[
+          styles.container, 
+          isLoading && styles.sending,
+          isDisabled && styles.disabled
+        ]}
         onPress={handleSendMessage}
-        disabled={sending}
+        disabled={isDisabled}
       >
         <Ionicons
-          name={sending ? "hourglass" : "send"}
+          name={isLoading ? "hourglass" : "send"}
           size={24}
-          color={sending ? Colors.light.tint : "black"}
+          color={isLoading ? Colors.light.tint : "black"}
         />
       </Pressable>
     </View>
@@ -80,5 +92,8 @@ const styles = StyleSheet.create({
   sending: {
     opacity: 0.7,
     backgroundColor: Colors.light.background,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -1,4 +1,3 @@
-// hooks/useBulkEmail.ts
 import { BACKEND } from "@/app/config";
 import { useState } from "react";
 
@@ -12,7 +11,10 @@ interface BulkEmailResult {
 }
 
 interface UseBulkEmailReturn {
-  sendBulkEmails: (data: { [key: string]: string }) => Promise<BulkEmailResult>;
+  sendBulkEmails: (
+    data: { [key: string]: string },
+    onProgress?: (email: string, success: boolean) => void
+  ) => Promise<BulkEmailResult>;
   isLoading: boolean;
   error: string | null;
 }
@@ -22,27 +24,57 @@ export const useBulkEmail = (): UseBulkEmailReturn => {
   const [error, setError] = useState<string | null>(null);
 
   const sendBulkEmails = async (
-    data: { [key: string]: string }
+    data: { [key: string]: string },
+    onProgress?: (email: string, success: boolean) => void
   ): Promise<BulkEmailResult> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${BACKEND}/api/send-bulk-emails`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const results = {
+        success: [] as Array<{ name: string; email: string }>,
+        failed: [] as Array<{ name: string; email: string; reason: string }>
+      };
 
-      const result = await response.json();
+      // Enviar emails uno por uno para reportar progreso
+      for (const [name, email] of Object.entries(data)) {
+        try {
+          const response = await fetch(`${BACKEND}/api/send-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ [name]: email }),
+          });
 
-      if (!response.ok) {
-        throw new Error(result.error || "Error al enviar correos");
+          const result = await response.json();
+
+          if (result.success) {
+            results.success.push({ name, email });
+            onProgress?.(email, true); 
+          } else {
+            results.failed.push({ 
+              name, 
+              email,
+              reason: result.error || "Error desconocido" 
+            });
+            onProgress?.(email, false); 
+          }
+        } catch (error) {
+          results.failed.push({ 
+            name,
+            email,
+            reason: error instanceof Error ? error.message : "Error de red" 
+          });
+          onProgress?.(email, false);
+        }
       }
 
-      return result;
+      return {
+        success: true,
+        message: "Proceso completado",
+        results
+      };
     } catch (err: any) {
       const errorMessage = err.message || "Error desconocido";
       setError(errorMessage);

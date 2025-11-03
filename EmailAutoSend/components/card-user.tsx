@@ -36,10 +36,12 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     loadMore,
     isLoadingMore,
     isOffline,
+    
   } = useFetchData({
     limit: 8,
   });
-  const { refreshTrigger } = useUsers();
+  const { refreshTrigger, sentEmails, sendingIndividualEmails } = useUsers();
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -121,16 +123,26 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
 
   const renderItem = ({ item }: { item: User }) => {
     const data = { [item.name]: item.email };
-
+  
+    const isSending = sendingIndividualEmails.has(item.email);
+    const isSent = sentEmails.has(item.email);
+  
     return (
       <View style={styles.userRow}>
         <AvatarCircle name={item.name} />
         <View style={[styles.userInfo, styles.userInfoWithAvatar]}>
           <Text style={styles.nameText}>Nombre: {item.name}</Text>
           <Text style={styles.emailText}>Correo: {item.email}</Text>
+          {isSending && !isSent && (
+            <Text style={styles.sendingText}>Enviando...</Text>
+          )}
+          {isSent && (
+            <Text style={styles.sentText}>✓ Enviado</Text>
+          )}
         </View>
         <ButtonSendIndividual
           data={data}
+          email={item.email}
           onSuccess={() => handleSendSuccess(item.name)}
         />
       </View>
@@ -306,5 +318,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#666",
+  },
+  sendingText: {
+    fontSize: 12,
+    color: Colors.light.primary,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  sentText: {
+    fontSize: 12,
+    color: "#27ae60",
+    fontWeight: "600",
+    marginTop: 4,
   },
 });

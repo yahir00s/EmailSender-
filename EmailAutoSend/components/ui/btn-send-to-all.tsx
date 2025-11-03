@@ -1,15 +1,29 @@
-import { Pressable, StyleSheet, Text, Alert, ActivityIndicator } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import React from "react";
 import { Colors } from "@/constants/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useBulkEmail } from "@/hooks/use-bulk-email";
 import { useFetchData } from "@/hooks/use-fetch-data";
 import { useAlert } from "@/context/AlertContext";
+import { useUsers } from "@/context/UsersContext";
 
 const ButtonSendToAll = () => {
   const { sendBulkEmails, isLoading } = useBulkEmail();
-  const { data } = useFetchData({ page: 1, limit: 100 }); // Obtener todos los datos
+  const { data } = useFetchData({ page: 1, limit: 100 });
   const { showAlert } = useAlert();
+  const {
+    setIsSendingToAll,
+    addSendingEmail,
+    removeSendingEmail,
+    addSentEmail,
+    clearSentEmails,
+  } = useUsers();
 
   const handleSendToAll = async () => {
     if (!data?.items || data.items.length === 0) {
@@ -17,9 +31,8 @@ const ButtonSendToAll = () => {
       return;
     }
 
-    // Convertir todos los items a un solo objeto
     const allEmails: { [key: string]: string } = {};
-    
+
     data.items.forEach((item) => {
       Object.entries(item.data).forEach(([name, email]) => {
         allEmails[name] = email;
@@ -39,29 +52,32 @@ const ButtonSendToAll = () => {
         {
           text: "Enviar",
           onPress: async () => {
+            setIsSendingToAll(true);
+            clearSentEmails();
+            
+            Object.values(allEmails).forEach(email => {
+              addSendingEmail(email);
+            });
+        
             try {
-              const result = await sendBulkEmails(allEmails);
+              const result = await sendBulkEmails(allEmails, (email, success) => {
+                removeSendingEmail(email);
+                if (success) {
+                  addSentEmail(email);
+                }
+              });
               
               Alert.alert(
                 "Envío completado",
                 `✅ Exitosos: ${result.results.success.length}\n❌ Fallidos: ${result.results.failed.length}`,
                 [
-                  {
-                    text: "Ver detalles",
-                    onPress: () => {
-                      if (result.results.failed.length > 0) {
-                        const failedList = result.results.failed
-                          .map((f) => `• ${f.name}: ${f.reason}`)
-                          .join("\n");
-                        Alert.alert("Correos fallidos", failedList);
-                      }
-                    },
-                  },
                   { text: "OK" },
                 ]
               );
             } catch (error: any) {
-              showAlert("Envio fallido","error")
+              showAlert("Envio fallido", "error");
+            } finally {
+              setIsSendingToAll(false);
             }
           },
         },

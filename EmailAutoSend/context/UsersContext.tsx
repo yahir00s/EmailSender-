@@ -22,6 +22,14 @@ interface UsersContextType {
   refreshUsers: () => Promise<void>;
   triggerRefresh: () => void;
   refreshTrigger: number;
+  isSendingToAll: boolean;
+  sendingIndividualEmails: Set<string>;
+  setIsSendingToAll: (value: boolean) => void;
+  addSendingEmail: (email: string) => void;
+  removeSendingEmail: (email: string) => void;
+  sentEmails: Set<string>;
+  addSentEmail: (email: string) => void;
+  clearSentEmails: () => void;
 }
 
 const UsersContext = createContext<UsersContextType | undefined>(undefined);
@@ -38,6 +46,7 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   const [sendingIndividualEmails, setSendingIndividualEmails] = useState<
     Set<string>
   >(new Set());
+  const [sentEmails, setSentEmails] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadUsersFromStorage = async () => {
@@ -105,7 +114,25 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     setRefreshTrigger((prev) => prev + 1);
   }, []);
 
-  
+  const addSendingEmail = (email: string) => {
+    setSendingIndividualEmails((prev) => new Set([...prev, email]));
+  };
+
+  const removeSendingEmail = (email: string) => {
+    setSendingIndividualEmails((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(email);
+      return newSet;
+    });
+  };
+
+  const addSentEmail = useCallback((email: string) => {
+    setSentEmails((prev) => new Set([...prev, email]));
+  }, []);
+
+  const clearSentEmails = useCallback(() => {
+    setSentEmails(new Set());
+  }, []);
 
   return (
     <UsersContext.Provider
@@ -118,6 +145,14 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
         refreshUsers,
         triggerRefresh,
         refreshTrigger,
+        isSendingToAll,
+        sendingIndividualEmails,
+        setIsSendingToAll,
+        addSendingEmail,
+        removeSendingEmail,
+        sentEmails,
+        addSentEmail,
+        clearSentEmails,
       }}
     >
       {children}
