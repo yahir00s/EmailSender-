@@ -27,10 +27,18 @@ interface CardUserProps {
 }
 
 const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
-  const { data, isLoading, error, refetch, hasMore, loadMore, isLoadingMore, isOffline } =
-    useFetchData({
-      limit: 8,
-    });
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    hasMore,
+    loadMore,
+    isLoadingMore,
+    isOffline,
+  } = useFetchData({
+    limit: 8,
+  });
   const { refreshTrigger } = useUsers();
 
   useFocusEffect(
@@ -52,7 +60,7 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     data.items.forEach((item) => {
       Object.entries(item.data).forEach(([name, email]) => {
         allUsers.push({
-          name: name.charAt(0).toUpperCase() + name.slice(1), 
+          name: name.charAt(0).toUpperCase() + name.slice(1),
           email,
         });
       });
@@ -80,11 +88,9 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
         {onSearchChange && (
           <SearchBar value={searchQuery} onChangeText={onSearchChange} />
         )}
-        {isOffline && (!data?.items || data.items.length!== 0) && (
+        {isOffline && (!data?.items || data.items.length !== 0) && (
           <View style={styles.offlineBanner}>
-            <Text style={styles.offlineText}>
-              No tienes conexión
-            </Text>
+            <Text style={styles.offlineText}>No tienes conexión</Text>
           </View>
         )}
         <ButtonSendToAll />
@@ -144,34 +150,33 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
   if (users.length === 0) {
     return (
       <>
-      {renderHeader()}
-      <FlatList
-        data={[]}
-        keyExtractor={() => "empty"}
-        renderItem={() => null}
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-        // ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aún no has agregado usuarios</Text>
-          </View>
-        }
-        refreshControl={
-          <RefreshControl
-          refreshing={isLoading}
-          onRefresh={refetch}
-          colors={[Colors.light.primary]}
-          />
-        }
+        {renderHeader()}
+        <FlatList
+          data={[]}
+          keyExtractor={() => "empty"}
+          renderItem={() => null}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          // ListHeaderComponent={renderHeader}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Aún no has agregado usuarios</Text>
+            </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={refetch}
+              colors={[Colors.light.primary]}
+            />
+          }
         />
-        </>
+      </>
     );
   }
 
   return (
     <>
-      {renderHeader()}
       <FlatList
         data={users}
         keyExtractor={(item, index) => `${item.email}-${index}`}
@@ -180,7 +185,19 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
         showsVerticalScrollIndicator={false}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.5}
-        // ListHeaderComponent={renderHeader}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            {onSearchChange && (
+              <SearchBar value={searchQuery} onChangeText={onSearchChange} />
+            )}
+            {isOffline && (!data?.items || data.items.length !== 0) && (
+              <View style={styles.offlineBanner}>
+                <Text style={styles.offlineText}>No tienes conexión</Text>
+              </View>
+            )}
+            <ButtonSendToAll />
+          </View>
+        }
         ListFooterComponent={isLoadingMore ? renderFooter : null}
         refreshControl={
           <RefreshControl
