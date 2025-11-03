@@ -36,12 +36,10 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     loadMore,
     isLoadingMore,
     isOffline,
-    
   } = useFetchData({
     limit: 8,
   });
   const { refreshTrigger, sentEmails, sendingIndividualEmails } = useUsers();
-
 
   useFocusEffect(
     React.useCallback(() => {
@@ -123,10 +121,10 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
 
   const renderItem = ({ item }: { item: User }) => {
     const data = { [item.name]: item.email };
-  
+
     const isSending = sendingIndividualEmails.has(item.email);
     const isSent = sentEmails.has(item.email);
-  
+
     return (
       <View style={styles.userRow}>
         <AvatarCircle name={item.name} />
@@ -136,9 +134,7 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
           {isSending && !isSent && (
             <Text style={styles.sendingText}>Enviando...</Text>
           )}
-          {isSent && (
-            <Text style={styles.sentText}>✓ Enviado</Text>
-          )}
+          {isSent && <Text style={styles.sentText}>✓ Enviado</Text>}
         </View>
         <ButtonSendIndividual
           data={data}
@@ -148,12 +144,6 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
       </View>
     );
   };
-
-  // const renderFooter = useCallback(() => {
-  //   if (() {
-  
-  //   } else null
-  // }, [hasMore, isOffline, isLoadingMore]);
 
   if (users.length === 0) {
     return (
@@ -206,12 +196,13 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
             <ButtonSendToAll />
           </View>
         }
-        ListFooterComponent={
-          (!hasMore || isOffline) && isLoadingMore ?
-          <View style={styles.footer}>
-          <ActivityIndicator size="small" color={Colors.light.primary} />
-          <Text style={styles.footerText}>Cargando más usuarios...</Text>
-        </View> : null
+        ListFooterComponent={ () => 
+          (!hasMore || isOffline) && isLoadingMore ? (
+            <View style={styles.footer}>
+              <ActivityIndicator size="small" color={Colors.light.primary} />
+              <Text style={styles.footerText}>Cargando más usuarios...</Text>
+            </View>
+          ) : null
         }
         refreshControl={
           <RefreshControl
