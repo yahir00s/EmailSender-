@@ -139,6 +139,7 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
 
   const renderFooter = () => {
     if (!hasMore) return null;
+    if(isOffline) return null;
     return (
       <View style={styles.footer}>
         <ActivityIndicator size="small" color={Colors.light.primary} />

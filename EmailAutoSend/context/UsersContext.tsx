@@ -1,6 +1,12 @@
 // Context para manejar el estado global de usuarios
 import { BACKEND } from "@/app/config";
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface User {
@@ -28,8 +34,11 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   const [users, setUsers] = useState<User[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isSendingToAll, setIsSendingToAll] = useState(false);
+  const [sendingIndividualEmails, setSendingIndividualEmails] = useState<
+    Set<string>
+  >(new Set());
 
-  // Cargar usuarios desde AsyncStorage al inicio
   useEffect(() => {
     const loadUsersFromStorage = async () => {
       try {
@@ -48,7 +57,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
     loadUsersFromStorage();
   }, []);
 
-  // Guardar usuarios en AsyncStorage cuando cambian
   useEffect(() => {
     if (isInitialized) {
       const saveUsersToStorage = async () => {
@@ -82,7 +90,6 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshUsers = useCallback(async () => {
     try {
-      // Usar paginación para ser compatible con el nuevo sistema
       const response = await fetch(`${BACKEND}/api/data?page=1&limit=8`);
       const data = await response.json();
       if (data.success && data.items) {
@@ -95,20 +102,22 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const triggerRefresh = useCallback(() => {
-     setRefreshTrigger((prev) => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
+
+  
 
   return (
     <UsersContext.Provider
-      value={{ 
-        users, 
-        setUsers, 
-        addUser, 
-        removeUser, 
-        clearUsers, 
+      value={{
+        users,
+        setUsers,
+        addUser,
+        removeUser,
+        clearUsers,
         refreshUsers,
         triggerRefresh,
-        refreshTrigger
+        refreshTrigger,
       }}
     >
       {children}

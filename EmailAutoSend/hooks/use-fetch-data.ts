@@ -96,21 +96,24 @@ export const useFetchData = ({
       const result: FetchDataResponse = await response.json();
 
       // Validar que la respuesta tenga la estructura esperada
-      if (!result || typeof result !== 'object') {
-        throw new Error('Respuesta inválida del servidor');
+      if (!result || typeof result !== "object") {
+        throw new Error("Respuesta inválida del servidor");
       }
 
       if (isLoadingMore && data) {
-        setData({
+        const updatedData = {
           ...result,
           items: [...data.items, ...(result.items || [])],
-        });
+        };
+        setData(updatedData);
+        await saveUserDataToStorage(updatedData);
       } else {
         setData(result);
+
       }
 
       if (result.success) {
-        await saveUserDataToStorage(result);
+        
 
         if (result.items && result.items.length > 0) {
           const newUsers = result.items.map((item) => item.data);
@@ -130,7 +133,7 @@ export const useFetchData = ({
 
       // Detectar errores de red
       const isNetworkError =
-        err.name === 'AbortError' ||
+        err.name === "AbortError" ||
         errorMessage.includes("Network request failed") ||
         errorMessage.includes("Failed to fetch") ||
         errorMessage.includes("fetch") ||
@@ -139,7 +142,7 @@ export const useFetchData = ({
 
       if (isNetworkError) {
         setIsOffline(true);
-        
+
         try {
           const cachedData = await loadUserDataFromStorage();
 
@@ -147,7 +150,7 @@ export const useFetchData = ({
             setData(cachedData);
             const cachedUsers = cachedData.items.map((item) => item.data);
             setUsers(cachedUsers);
-            setError(null); 
+            setError(null);
           } else {
             setData({
               success: true,
@@ -158,7 +161,7 @@ export const useFetchData = ({
               items: [],
             });
             setUsers([]);
-            setError(null); 
+            setError(null);
           }
         } catch (cacheError) {
           console.warn("No se pudo cargar datos en caché");
@@ -174,13 +177,12 @@ export const useFetchData = ({
           setError(null);
         }
       } else {
-
         if (__DEV__) {
           console.warn("Error fetching data:", errorMessage);
         }
-        setError(null); 
+        setError(null);
         setIsOffline(false);
-        
+
         try {
           const cachedData = await loadUserDataFromStorage();
           if (cachedData) {
@@ -188,8 +190,7 @@ export const useFetchData = ({
             const cachedUsers = cachedData.items.map((item) => item.data);
             setUsers(cachedUsers);
           }
-        } catch {
-        }
+        } catch {}
       }
     } finally {
       setIsLoading(false);
