@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import { Colors } from "@/constants/theme";
 import ButtonSendIndividual from "./ui/btn-send-individual";
 import { useFetchData } from "@/hooks/use-fetch-data";
@@ -149,16 +149,11 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
     );
   };
 
-  const renderFooter = () => {
-    if (!hasMore) return null;
-    if(isOffline) return null;
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color={Colors.light.primary} />
-        <Text style={styles.footerText}>Cargando más usuarios...</Text>
-      </View>
-    );
-  };
+  // const renderFooter = useCallback(() => {
+  //   if (() {
+  
+  //   } else null
+  // }, [hasMore, isOffline, isLoadingMore]);
 
   if (users.length === 0) {
     return (
@@ -211,7 +206,13 @@ const CardUser = ({ searchQuery = "", onSearchChange }: CardUserProps) => {
             <ButtonSendToAll />
           </View>
         }
-        ListFooterComponent={isLoadingMore ? renderFooter : null}
+        ListFooterComponent={
+          (!hasMore || isOffline) && isLoadingMore ?
+          <View style={styles.footer}>
+          <ActivityIndicator size="small" color={Colors.light.primary} />
+          <Text style={styles.footerText}>Cargando más usuarios...</Text>
+        </View> : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
